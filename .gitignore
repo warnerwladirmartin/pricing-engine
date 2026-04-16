@@ -1,0 +1,30 @@
+# Sensitive data
+*.env
+*credentials*
+*password*
+*secret*
+
+# Data files (never commit real data)
+*.xlsx
+*.xls
+*.csv
+*.json
+!docs/**/*.json
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
+
+# Power BI
+*.pbix
+*.pbit
