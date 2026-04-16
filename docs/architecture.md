@@ -13,7 +13,7 @@ EP_PARAMETROS_MARGEM (6 tabs)
         │
         │  lerParametros_()
         ▼
-EP_BASE_CUSTOS / Custos_Estrutura_Panther_v2
+EP_BASE_CUSTOS / CostStructure_v2
   RESULTADO tab, column H = custo_c_oluc (537 PAs with BOM cost)
         │
         │  lerCustos_()

@@ -6,7 +6,7 @@ How production costs flow from the BOM spreadsheet into the pricing engine.
 
 ## Source Spreadsheet
 
-- **Name**: Custos_Estrutura_Panther_v2
+- **Name**: CostStructure_v2
 - **Referred to in code as**: EP_BASE_CUSTOS (same Google Sheets ID)
 - **Tab consumed by motor**: `RESULTADO`
 - **Column consumed**: H — `custo_c_oluc` (production cost including OLUC levy)
@@ -108,7 +108,7 @@ These are combined into `CUSTO_TOTAL%` (column K) and fed into the margin formul
 
 ## CONFIG Reference
 
-In EP_BASE_CUSTOS / Custos_Estrutura_Panther_v2:
+In EP_BASE_CUSTOS / CostStructure_v2:
 
 | Tab | Key cell | Value |
 |---|---|---|

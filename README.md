@@ -71,7 +71,7 @@ This ensures all variable costs and the desired margin are fully covered at the 
 EP_PARAMETROS_MARGEM
   (6 tabs: FRETE, COMISSAO, IMPOSTOS, MARGEM_POLITICA, CUSTOS_ADICIONAIS, CLASSIF_ESTRATEGICA)
         │
-EP_BASE_CUSTOS / Custos_Estrutura_Panther_v2
+EP_BASE_CUSTOS / CostStructure_v2
   (BOM cascade: MP → PE → PA → RESULTADO with OLUC 12%)
         │
 EP_BASE_VENDAS
@@ -118,7 +118,7 @@ For each customer/product:
 
 ## Cost Integration
 
-Production costs are read from the RESULTADO tab of Custos_Estrutura_Panther_v2, column H (`custo_c_oluc`). The BOM cascade ensures any raw material price change flows automatically:
+Production costs are read from the RESULTADO tab of CostStructure_v2, column H (`custo_c_oluc`). The BOM cascade ensures any raw material price change flows automatically:
 
 ```
 CUSTOS_MP (raw material costs + reajuste)

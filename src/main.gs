@@ -18,7 +18,7 @@
 //   2. EP_BASE_VENDAS       — sales history (last price, date, volume)
 //   3. EP_TABELAS_REF       — benchmark prices (PADRAO, RJ, LEME, CONSUMO, VAREJO)
 //   4. EP_BASE_CUSTOS /     — production costs (BOM cascade: MP→PE→PA + OLUC 12%)
-//      Custos_Estrutura_Panther_v2
+//      CostStructure_v2
 //   5. EP_PARAMETROS_MARGEM — freight, commission, taxes, margin policy, strategic
 //   6. EP_MOTOR itself      — CONFIG, REAJUSTES, CLASSIFICACAO, TABELA_NOVA
 //
@@ -42,7 +42,7 @@
 var ID_MOTOR        = '<ID_MOTOR_PRECIFICACAO>';
 var ID_CLIENTES     = '<ID_CLIENTES>';
 var ID_BASE_VENDAS  = '<ID_BASE_VENDAS>';
-var ID_BASE_CUSTOS  = '<ID_BASE_CUSTOS>';         // Custos_Estrutura_Panther_v2
+var ID_BASE_CUSTOS  = '<ID_BASE_CUSTOS>';         // CostStructure_v2
 var ID_TABELAS_REF  = '<ID_TABELAS_REF>';
 var ID_PARAMETROS   = '<ID_PARAMETROS_MARGEM>';
 
@@ -283,7 +283,7 @@ function calcPrazoMedio_(historicoCliente) {
 
 /**
  * lerCustos_ — reads production costs from the RESULTADO tab of
- * Custos_Estrutura_Panther_v2 (same spreadsheet as EP_BASE_CUSTOS).
+ * CostStructure_v2 (same spreadsheet as EP_BASE_CUSTOS).
  *
  * Returns an object keyed by SKU: { custo: number }
  *
