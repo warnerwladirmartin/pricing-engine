@@ -68,44 +68,50 @@ var COR_LARANJA_ESC   = '#222221';
 var COR_LARANJA_CLARO = '#FFF3EB';
 var COR_BRANCO        = '#FFFFFF';
 
-// TABELA_NOVA column map — 1-indexed, 28 columns
+// TABELA_NOVA column map — 1-indexed, 29 columns (v3.1)
+// v3.1 change: added CLASSIF_ESTRATEGICA at position E (shifted all subsequent cols by +1)
 var COL = {
-  SKU:            1,   // A — internal ERP product code
-  PRODUTO:        2,   // B — product description
-  FAMILIA:        3,   // C — product family grouping
-  CLASSIF:        4,   // D — commercial classification (PREMIUM, STANDARD, etc.)
-  UNID:           5,   // E — unit of measure (BD, TB, CX, ...)
+  SKU:                  1,   // A — internal ERP product code
+  PRODUTO:              2,   // B — product description
+  FAMILIA:              3,   // C — product family grouping
+  CLASSIF:              4,   // D — product classification (MINERAL, SYNTHETIC, GREASE, ...)
+  CLASSIF_ESTRATEGICA:  5,   // E — strategic quadrant (PROFIT DRIVER / HIDDEN STAR / ...) ⭐ v3.1
+  UNID:                 6,   // F — unit of measure (BD, TB, CX, ...)
 
-  CUSTO_PROD:     6,   // F — production cost from BOM cascade (incl. OLUC)
-  FRETE:          7,   // G — freight cost as % of price (by state)
-  COMISSAO:       8,   // H — sales commission % (by rep / CNPJ exception)
-  IMPOSTOS:       9,   // I — tax burden % (by state)
-  CUSTO_FIN:     10,   // J — financial carrying cost % (monthly rate)
-  CUSTO_TOTAL:   11,   // K — sum of all variable cost %s (G+H+I+J)
+  CUSTO_PROD:           7,   // G — production cost from BOM cascade (incl. OLUC)
+  FRETE:                8,   // H — freight cost as % of price (by state)
+  COMISSAO:             9,   // I — sales commission % (by rep full name / CNPJ exception)
+  IMPOSTOS:            10,   // J — tax burden % (by state)
+  CUSTO_FIN:           11,   // K — financial carrying cost % (monthly rate × avg term months)
+  CUSTO_TOTAL:         12,   // L — sum of all variable cost %s (H+I+J+K)
 
-  MARGEM_MIN:    12,   // L — minimum acceptable margin %
-  MARGEM_ALVO:   13,   // M — target margin % (from margin policy)
+  MARGEM_MIN:          13,   // M — minimum acceptable margin %
+  MARGEM_ALVO:         14,   // N — target margin % (from margin policy, 3D lookup)
 
-  PRECO_MIN:     14,   // N — floor price: custo / (1 - custos% - margem_min%)
-  PRECO_SUGERIDO: 15,  // O — suggested price: custo / (1 - custos% - margem_alvo%)
+  PRECO_MIN:           15,   // O — floor price:      custo / (1 - custos% - margem_min%)
+  PRECO_SUGERIDO:      16,   // P — suggested price:  custo / (1 - custos% - margem_alvo%)
 
-  PRECO_REF:     16,   // P — benchmark price from EP_TABELAS_REF
-  ULT_PRECO:     17,   // Q — last invoiced price from sales history
-  TEM_HIST:      18,   // R — flag: TRUE if customer has sales history for this SKU
+  PRECO_REF:           17,   // Q — benchmark price from EP_TABELAS_REF
+  ULT_PRECO:           18,   // R — last invoiced price from sales history
+  TEM_HIST:            19,   // S — flag: TRUE if customer has sales history for this SKU
 
-  PRECO_BASE:    19,   // S — base price (ULT_PRECO if TEM_HIST, else PRECO_REF)
-  REAJUSTE:      20,   // T — adjustment % from REAJUSTES tab (global/classif/family)
-  NOVO_PRECO:    21,   // U — final proposed price after adjustment
+  PRECO_BASE:          20,   // T — base price (ULT_PRECO if TEM_HIST, else PRECO_REF)
+  REAJUSTE:            21,   // U — accumulated adjustment % (multiplicative, 4 levels)
+  NOVO_PRECO:          22,   // V — final proposed price after adjustment
 
-  MARGEM_REAL_PCT: 22, // V — actual margin % at NOVO_PRECO
-  MARGEM_REAL_RS:  23, // W — actual margin R$ at NOVO_PRECO
-  ALERTA:          24, // X — alert: ABAIXO MINIMO / ABAIXO ALVO / OK / PREMIUM
+  MARGEM_REAL_PCT:     23,   // W — actual margin % at NOVO_PRECO
+  MARGEM_REAL_RS:      24,   // X — actual margin R$ at NOVO_PRECO
+  ALERTA:              25,   // Y — alert: ABAIXO MINIMO / ABAIXO ALVO / OK / PREMIUM
 
-  DT_ULT_VENDA:  25,  // Y — date of last sale (from EP_BASE_VENDAS)
-  QTD_HIST:      26,  // Z — total volume in history period
-  N_VENDAS:      27,  // AA — number of invoices in history period
-  FONTE:         28   // AB — data source flag (DAGDA / HISTORICO / SEM HIST)
+  DT_ULT_VENDA:        26,   // Z — date of last sale (from EP_BASE_VENDAS)
+  QTD_HIST:            27,   // AA — total volume in history period
+  N_VENDAS:            28,   // AB — number of invoices in history period
+  FONTE:               29    // AC — data source flag (DAGDA / HISTORICO / SEM HIST)
 };
+
+// v3.1 alert thresholds (tighter OK band than v3.0)
+// v3.0 had PREMIUM at 1.20× suggested; v3.1 moved it to 1.15× — tighter OK.
+var ALERT_PREMIUM_MULTIPLIER = 1.15;
 
 
 // ── [B] LIFECYCLE HOOKS ───────────────────────────────────────
@@ -702,6 +708,7 @@ function carregarCliente() {
     var linhaPlan = i + 2; // 1-indexed, row 1 = header
     var classif   = classifMap[sku] || '';
     var familia   = String(wsNova.getRange(linhaPlan, COL.FAMILIA).getValue()).trim();
+    var classifEstr = params.classifEstrategica[sku] || ''; // v3.1: strategic quadrant
 
     var custoProd = custos[sku]      || 0;
     var margPolicy = buscarMargem_(sku, familia, classif, params);
@@ -745,7 +752,7 @@ function carregarCliente() {
       alerta = 'ABAIXO MINIMO';
     } else if (novoPreco < precoSugerido) {
       alerta = 'ABAIXO ALVO';
-    } else if (novoPreco > precoSugerido * 1.2) {
+    } else if (novoPreco > precoSugerido * ALERT_PREMIUM_MULTIPLIER) {
       alerta = 'PREMIUM';
     } else {
       alerta = 'OK';
@@ -753,6 +760,7 @@ function carregarCliente() {
 
     // Write all computed columns in one batch per row
     wsNova.getRange(linhaPlan, COL.CLASSIF).setValue(classif);
+    wsNova.getRange(linhaPlan, COL.CLASSIF_ESTRATEGICA).setValue(classifEstr); // v3.1
     wsNova.getRange(linhaPlan, COL.CUSTO_PROD).setValue(custoProd);
     wsNova.getRange(linhaPlan, COL.FRETE).setValue(pctFrete / 100);
     wsNova.getRange(linhaPlan, COL.COMISSAO).setValue(pctComissao / 100);
@@ -873,6 +881,7 @@ function corrigirFormulas() {
 
     var familia  = String(wsNova.getRange(i, COL.FAMILIA).getValue()).trim();
     var classif  = classifMap[sku] || String(wsNova.getRange(i, COL.CLASSIF).getValue()).trim();
+    var classifEstr = params.classifEstrategica[sku] || ''; // v3.1: strategic quadrant
     var precoBase = parsePreco_(wsNova.getRange(i, COL.PRECO_BASE).getValue());
 
     var custoProd   = custos[sku] || parsePreco_(wsNova.getRange(i, COL.CUSTO_PROD).getValue());
@@ -900,12 +909,16 @@ function corrigirFormulas() {
       alerta = 'ABAIXO MINIMO';
     } else if (novoPreco < precoSugerido) {
       alerta = 'ABAIXO ALVO';
-    } else if (novoPreco > precoSugerido * 1.2) {
+    } else if (novoPreco > precoSugerido * ALERT_PREMIUM_MULTIPLIER) {
       alerta = 'PREMIUM';
     } else {
       alerta = 'OK';
     }
 
+    // v3.1: also refresh strategic classification (in case tab was updated)
+    if (classifEstr) {
+      wsNova.getRange(i, COL.CLASSIF_ESTRATEGICA).setValue(classifEstr);
+    }
     wsNova.getRange(i, COL.CUSTO_PROD).setValue(custoProd);
     wsNova.getRange(i, COL.CUSTO_TOTAL).setValue(custoTotalPct / 100);
     wsNova.getRange(i, COL.MARGEM_MIN).setValue(margPolicy.min / 100);

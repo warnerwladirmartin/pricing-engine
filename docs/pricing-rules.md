@@ -1,4 +1,4 @@
-# Pricing Rules — v3.0
+# Pricing Rules — v3.1
 
 ## Core Formula
 
@@ -9,76 +9,85 @@ preco = custo_prod / (1 - custo_total% - margem%)
 ```
 
 Where:
-- `custo_prod` = production cost from BOM cascade, including OLUC 12% (column F)
-- `custo_total%` = sum of all variable cost percentages (column K):
-  - Freight (G) — by customer state
-  - Commission (H) — by rep / CNPJ / UF
-  - Taxes (I) — by customer state
-  - Financial cost (J) — monthly rate × average payment term
-- `margem%` = from the margin policy hierarchy (columns L or M)
+- `custo_prod` = production cost from BOM cascade, including OLUC 12% = 11% oil + 1% packaging (column G)
+- `custo_total%` = sum of all variable cost percentages (column L):
+  - Freight (H) — by customer state
+  - Commission (I) — by rep full name / CNPJ / UF
+  - Taxes (J) — by customer state
+  - Financial cost (K) — monthly rate × average payment term (v3.1: dynamic per customer)
+- `margem%` = from the margin policy 3D hierarchy (columns M or N)
 
 Two prices are calculated per SKU:
-- **PRECO MINIMO** (col N): uses `margem_min%` — the floor; analyst should not go below this
-- **PRECO SUGERIDO** (col O): uses `margem_alvo%` — the commercial target
+- **PRECO MINIMO** (col O): uses `margem_min%` — the floor; analyst should not go below this
+- **PRECO SUGERIDO** (col P): uses `margem_alvo%` — the commercial target
+
+> **v3.1 column shift note:** column E is now `CLASSIFICACAO ESTRATEGICA` (strategic quadrant). All columns from F onward shifted one position to the right versus v3.0.
 
 ---
 
-## Variable Cost Breakdown
+## Variable Cost Breakdown (v3.1 columns)
 
 | Component | Source | Column |
 |---|---|---|
-| Freight | EP_PARAMETROS_MARGEM / FRETE tab, by customer UF | G |
-| Commission | EP_PARAMETROS_MARGEM / COMISSAO tab (see commission engine below) | H |
-| Taxes | EP_PARAMETROS_MARGEM / IMPOSTOS tab, by customer UF | I |
-| Financial cost | EP_PARAMETROS_MARGEM / CUSTOS_ADICIONAIS — monthly rate | J |
-| **Total** | G + H + I + J | K |
+| Freight | EP_PARAMETROS_MARGEM / FRETE tab, by customer UF | H |
+| Commission | EP_PARAMETROS_MARGEM / COMISSAO tab (by rep full name; see commission engine below) | I |
+| Taxes | EP_PARAMETROS_MARGEM / IMPOSTOS tab, by customer UF | J |
+| Financial cost | EP_PARAMETROS_MARGEM / CUSTOS_ADICIONAIS — `monthly_rate × avg_term_months` (0 if term = CASH) | K |
+| **Total** | H + I + J + K | L |
 
 ---
 
-## Margin Hierarchy
+## Margin Hierarchy — 3D lookup (v3.1)
 
-Margins (min% and target%) are looked up with the following priority:
+Margins (min% and target%) are looked up with the following priority. Most specific wins — strategic class **overrides** classification, which overrides family, which overrides the default.
 
 ### Priority 1 — Strategic Quadrant (SKU-level)
 
-The CLASSIF_ESTRATEGICA tab in EP_PARAMETROS_MARGEM maps individual SKUs to a strategic quadrant (e.g., ESTRELA, VACA_LEITEIRA, QUESTAO, ABACAXI or similar BCG-style classification).
+The CLASSIF_ESTRATEGICA tab in EP_PARAMETROS_MARGEM maps individual SKUs to one of four strategic quadrants:
 
-Each quadrant has its own min/target margins defined in MARGEM_POLITICA.
+- **PROFIT DRIVER** — high volume, high margin SKUs; defend margin aggressively
+- **HIDDEN STAR** — high margin but low volume; protect and grow
+- **CASH COW** — high volume, low margin; keep stable
+- **DEAD WEIGHT** — low volume, low margin; candidate for discontinuation or price increase
 
-If the SKU has a quadrant assignment and that quadrant has a policy row with blank family and classification, that policy is used.
+Each quadrant has its own min/target margins defined in MARGEM_POLITICA. If a MARGEM_POLITICA row exists with this quadrant and blank family/classification, it wins the lookup.
 
-### Priority 2 — Commercial Classification
+### Priority 2 — Product Classification
 
-The CLASSIFICACAO tab in EP_MOTOR maps SKUs to commercial tiers (e.g., PREMIUM, STANDARD, ECONOMY). If a MARGEM_POLITICA row exists for the SKU's classification, it is used.
+MINERAL, SYNTHETIC, SEMI-SYNTHETIC, GREASE, AQUEOUS, BASE OILS — mapped to SKUs via the CLASSIFICACAO tab in EP_MOTOR.
 
 ### Priority 3 — Product Family
 
-If no classification match, MARGEM_POLITICA is checked for the SKU's family (column C of TABELA_NOVA).
+HYDRAULICS, MOTORS, TRACTORS, etc. (column C of TABELA_NOVA).
 
 ### Priority 4 — Default
 
 If no match at any level: `min = 15%`, `alvo = 25%`.
 
+> **Note on "most specific wins":** The current implementation is *override* — the strategic class fully replaces the family/classification margin. An alternative under study is an *additive delta* model (`PROFIT DRIVER = base + 5pp`). Business decision pending.
+
 ---
 
-## Commission Engine
+## Commission Engine (v3.1)
 
-Three-level lookup for each customer + product combination:
+Lookup for each customer + product combination — **by rep full name**, not by code.
 
 | Priority | Rule | Source |
 |---|---|---|
-| 1 (highest) | CNPJ exception | `params.comissaoExcecoes[cnpj]` |
-| 2 | State (UF) rule | `params.comissaoUF[uf]` |
-| 3 | Rep default | `params.comissao[repCode]` |
+| 1 (highest) | CNPJ exception | `params.comissaoExcecao[cnpj]` |
+| 2 | Per-rep default (by full name) | `params.comissaoPadrao[rep_full_name]` |
+| 3 | Special regional rule (e.g., `ALL_SP` adds +0.3% for specific reps) | `params.comissaoEspecial[]` |
 | 4 (fallback) | Hardcoded default | 5% |
 
-Use case for CNPJ exception: key accounts negotiated a specific commission rate with their representative. Use case for UF rule: very remote states where the commercial cost structure differs.
+**v3.1 change:** the lookup key for rep defaults is the full name (e.g., "João Silva"), not a code. Exact match is required — trailing spaces or accent differences block the lookup. See [troubleshooting.md §6](troubleshooting.md) for the common mismatch pattern.
+
+Use case for CNPJ exception: key accounts negotiated a specific commission rate with their representative. Use case for regional rules: state-level commercial uplifts (e.g., São Paulo special reps).
 
 ---
 
 ## Price Base Logic
 
-The **PRECO BASE** (column S) is the starting point before the adjustment % is applied.
+The **PRECO BASE** (column T in v3.1) is the starting point before the adjustment % is applied.
 
 ```
 if TEM_HIST = TRUE:
@@ -104,7 +113,7 @@ This PADRAO → LEME mapping is intentional: the LEME tab reflects the current c
 
 ## DAGDA vs Historical Source Distinction
 
-The FONTE column (AB) flags the origin of each price:
+The FONTE column (AC in v3.1) flags the origin of each price:
 
 | FONTE value | Meaning |
 |---|---|
@@ -137,17 +146,19 @@ All three levels accumulate. A SKU can receive all three adjustments simultaneou
 
 ---
 
-## Alert System
+## Alert System (v3.1 — tighter OK band)
 
-The ALERTA column (X) signals how the proposed price compares to the margin policy:
+The ALERTA column (Y in v3.1) signals how the proposed price compares to the margin policy:
 
 | Alert | Condition | Recommended action |
 |---|---|---|
 | SEM CUSTO | `custo_prod = 0` | Resolve missing BOM before approving price |
 | ABAIXO MINIMO | `NOVO_PRECO < PRECO_MINIMO` | Raise price or approve exception with reason |
 | ABAIXO ALVO | `PRECO_MINIMO ≤ NOVO_PRECO < PRECO_SUGERIDO` | Review — may be acceptable for strategic accounts |
-| OK | Within range | No action needed |
-| PREMIUM | `NOVO_PRECO > 1.20 × PRECO_SUGERIDO` | Verify — may indicate outdated base price or aggressive adjustment |
+| OK | `PRECO_SUGERIDO ≤ NOVO_PRECO ≤ 1.15 × PRECO_SUGERIDO` | No action needed |
+| PREMIUM | `NOVO_PRECO > 1.15 × PRECO_SUGERIDO` | Verify — may indicate outdated base price or aggressive adjustment |
+
+**v3.1 change:** the PREMIUM threshold was tightened from 1.20× to **1.15×** the suggested price. The OK band is now narrower — more prices now trigger the PREMIUM flag for review. The multiplier is centralized in the `ALERT_PREMIUM_MULTIPLIER` constant at the top of `main.gs`.
 
 ---
 

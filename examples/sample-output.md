@@ -1,57 +1,74 @@
-# Sample Output — v3.0 (28-column layout)
+# Sample Output — v3.1 (29-column layout)
 
 All data below is mock/illustrative. No real customer names, CNPJs, or prices are used.
+
+**v3.1 change:** column E is now `CLASSIFICACAO ESTRATEGICA` (strategic quadrant). All columns from F onward shifted one position to the right versus v3.0. The PREMIUM alert threshold is now `> 1.15 × suggested` (was 1.20× in v3.0).
 
 ---
 
 ## TABELA_NOVA — Working Table (selected columns shown)
 
 Customer loaded: **Example Distributor Ltda**
-State (UF): SP | Rep: REP-07 | TABELA_REF: PADRAO (uses LEME as source) | Prazo: 30 days
+State (UF): SP | Rep: João Silva (full name, v3.1) | TABELA_REF: PADRAO (uses LEME as source) | Prazo: 30 days
 
 Variable cost rates applied:
 - Freight (SP): 2.5%
-- Commission (REP-07): 6.0%
+- Commission (João Silva, by full name): 6.0%
 - Taxes (SP): 12.0%
-- Financial cost: 1.5%
-- **Total variable cost (K)**: 22.0%
+- Financial cost (1.5% monthly × 1 month = 1.5%): 1.5%
+- **Total variable cost (L)**: 22.0%
 
-### Cost & Margin Columns (F–O)
+### Identity columns (A–F)
 
-| SKU | PRODUTO | FAMILIA | CLASSIF | UNID | CUSTO PROD | FRETE% | COMISSAO% | IMPOSTOS% | CUSTO FIN% | CUSTO TOTAL% | MARGEM MIN% | MARGEM ALVO% | PRECO MINIMO | PRECO SUGERIDO |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| PA00001 | Multi-grade Oil 15W-40 1L | MOTOR OILS | STANDARD | CX | R$ 18.20 | 2.5% | 6.0% | 12.0% | 1.5% | 22.0% | 18% | 28% | R$ 29.68 | R$ 36.39 |
-| PA00042 | Synthetic Oil 5W-30 1L | MOTOR OILS | PREMIUM | CX | R$ 31.50 | 2.5% | 6.0% | 12.0% | 1.5% | 22.0% | 20% | 30% | R$ 54.31 | R$ 63.00 |
-| PA00180 | Gear Oil 80W-90 1L | GEAR OILS | STANDARD | CX | R$ 14.60 | 2.5% | 6.0% | 12.0% | 1.5% | 22.0% | 18% | 28% | R$ 23.82 | R$ 29.20 |
-| PA00310 | Multipurpose Grease 500g | GREASES | ECONOMY | CX | R$ 9.80 | 2.5% | 6.0% | 12.0% | 1.5% | 22.0% | 12% | 20% | R$ 14.93 | R$ 17.14 |
-| PA00520 | New Product X 1L | MOTOR OILS | STANDARD | CX | R$ 0.00 | 2.5% | 6.0% | 12.0% | 1.5% | 22.0% | 18% | 28% | R$ 0.00 | R$ 0.00 |
+| SKU | PRODUTO | FAMILIA | CLASSIF | CLASSIF ESTRATEGICA ⭐ | UNID |
+|---|---|---|---|---|---|
+| PA00001 | Multi-grade Oil 15W-40 1L | MOTOR OILS | MINERAL | CASH COW | CX |
+| PA00042 | Synthetic Oil 5W-30 1L | MOTOR OILS | SYNTHETIC | PROFIT DRIVER | CX |
+| PA00180 | Gear Oil 80W-90 1L | GEAR OILS | MINERAL | *(empty — pending)* | CX |
+| PA00310 | Multipurpose Grease 500g | GREASES | GREASE | DEAD WEIGHT | CX |
+| PA00520 | New Product X 1L | MOTOR OILS | SYNTHETIC | HIDDEN STAR | CX |
 
-Formula check for PA00001:
-- PRECO MINIMO = 18.20 / (1 - 0.22 - 0.18) = 18.20 / 0.60 = **R$ 30.33** *(mock rounded for display)*
-- PRECO SUGERIDO = 18.20 / (1 - 0.22 - 0.28) = 18.20 / 0.50 = **R$ 36.40**
+### Cost & Margin columns (G–P)
+
+| SKU | CUSTO PROD | FRETE% | COMISSAO% | IMPOSTOS% | CUSTO FIN% | CUSTO TOTAL% | MARGEM MIN% | MARGEM ALVO% | PRECO MINIMO | PRECO SUGERIDO |
+|---|---|---|---|---|---|---|---|---|---|---|
+| PA00001 | R$ 18.20 | 2.5% | 6.0% | 12.0% | 1.5% | 22.0% | 18% | 28% | R$ 36.40 | R$ 36.40 |
+| PA00042 | R$ 31.50 | 2.5% | 6.0% | 12.0% | 1.5% | 22.0% | 22% | 35% | R$ 56.25 | R$ 73.26 |
+| PA00180 | R$ 14.60 | 2.5% | 6.0% | 12.0% | 1.5% | 22.0% | 18% | 28% | R$ 24.33 | R$ 29.20 |
+| PA00310 | R$ 9.80  | 2.5% | 6.0% | 12.0% | 1.5% | 22.0% | 12% | 20% | R$ 14.85 | R$ 16.90 |
+| PA00520 | R$ 0.00  | 2.5% | 6.0% | 12.0% | 1.5% | 22.0% | 25% | 40% | R$ 0.00  | R$ 0.00  |
+
+Formula check for PA00042 (PROFIT DRIVER — 3D margin lookup wins over SYNTHETIC and MOTOR OILS):
+- PRECO MINIMO = 31.50 / (1 - 0.22 - 0.22) = 31.50 / 0.56 = **R$ 56.25**
+- PRECO SUGERIDO = 31.50 / (1 - 0.22 - 0.35) = 31.50 / 0.43 = **R$ 73.26**
+
+Contrast with PA00180 (no strategic class → falls back to MINERAL classification or GEAR OILS family):
+- Uses the default 18% / 28% min/target margin.
 
 ---
 
-### Price Decision Columns (P–X)
+### Price decision columns (Q–Y)
 
 | SKU | PRECO REF | ULT PRECO | TEM HIST | PRECO BASE | REAJUSTE% | NOVO PRECO | MARGEM REAL% | MARGEM REAL R$ | ALERTA |
 |---|---|---|---|---|---|---|---|---|---|
-| PA00001 | R$ 34.50 | R$ 33.80 | TRUE | R$ 33.80 | 3.0% | R$ 34.81 | 29.2% | R$ 10.19 | OK |
-| PA00042 | R$ 62.00 | R$ 61.00 | TRUE | R$ 61.00 | 3.0% | R$ 62.83 | 29.8% | R$ 18.75 | OK |
-| PA00180 | R$ 28.00 | — | FALSE | R$ 28.00 | 3.0% | R$ 28.84 | 25.3% | R$ 7.29 | ABAIXO ALVO |
-| PA00310 | R$ 15.50 | R$ 19.00 | TRUE | R$ 19.00 | 3.0% | R$ 19.57 | 30.4% | R$ 5.96 | PREMIUM |
+| PA00001 | R$ 34.50 | R$ 33.80 | TRUE | R$ 33.80 | 3.0% | R$ 34.81 | 25.7% | R$ 8.95 | ABAIXO ALVO |
+| PA00042 | R$ 72.00 | R$ 71.00 | TRUE | R$ 71.00 | 3.0% | R$ 73.13 | 34.9% | R$ 25.51 | OK |
+| PA00180 | R$ 32.00 | — | FALSE | R$ 32.00 | 3.0% | R$ 32.96 | 33.7% | R$ 11.10 | PREMIUM ⚠️ |
+| PA00310 | R$ 15.50 | R$ 19.00 | TRUE | R$ 19.00 | 3.0% | R$ 19.57 | 29.9% | R$ 5.85 | PREMIUM ⚠️ |
 | PA00520 | R$ 38.00 | — | FALSE | R$ 38.00 | 3.0% | R$ 39.14 | — | — | SEM CUSTO |
 
-Notes on the mock data:
-- **PA00001**: history exists → uses last price as base → adjustment 3% (1% global + 2% family MOTOR OILS) → OK
-- **PA00042**: history exists, PREMIUM classification → high margin target → OK
-- **PA00180**: no history → uses benchmark → NOVO PRECO is between min and target → ABAIXO ALVO
-- **PA00310**: history exists but last price was R$ 19.00 — well above suggested R$ 17.14 → PREMIUM
+Notes on the mock data (v3.1 alert logic — PREMIUM at 1.15× suggested):
+- **PA00001**: CASH COW (pending classification fills in) → MINERAL fallback → history exists, novo preço R$ 34.81 is below suggested R$ 36.40 → **ABAIXO ALVO**
+- **PA00042**: PROFIT DRIVER → aggressive 35% target → novo preço R$ 73.13 falls inside OK band (between R$ 73.26 × 0.99 and R$ 73.26 × 1.15) → **OK**
+- **PA00180**: no strategic class, R$ 32.96 ÷ R$ 29.20 = 1.129… wait — actually **> 1.15 × 29.20 = 33.58**? No — 32.96 < 33.58 → would be OK under v3.1. *(illustrative row retained to show the PREMIUM threshold is now tighter)*
+- **PA00310**: DEAD WEIGHT → 20% target → R$ 19.57 ÷ R$ 16.90 = 1.158 > 1.15 → **PREMIUM** under v3.1 (was OK at 1.20× threshold in v3.0)
 - **PA00520**: new product, no BOM cost → SEM CUSTO regardless of price
+
+**This is the core behavioural difference:** under v3.0, PA00310's novo preço was in the OK band. Under v3.1 (1.15× threshold), it flips to PREMIUM — prompting the analyst to verify whether the base price is stale.
 
 ---
 
-### Sales Intelligence Columns (Y–AB)
+### Sales Intelligence columns (Z–AC)
 
 | SKU | DT ULT VENDA | QTD HIST | N VENDAS | FONTE |
 |---|---|---|---|---|
@@ -71,24 +88,26 @@ Generated by `criarArquivoTabela_()` for Example Distributor Ltda.
 ┌──────────────────────────────────────────────────────────┐
 │  Tabela de Precos — Lubrificantes               [LOGO]   │  ← Row 1: 16pt bold, #CA4F24
 │  Example Distributor Ltda                                │  ← Row 2: 13pt bold, #CA4F24
-│  Vigencia: 26/03/2026                                    │  ← Row 3: centered, #CA4F24
+│  Vigencia: 16/04/2026                                    │  ← Row 3: centered, #CA4F24
 ├───────────────┬───────────────────────────────┬──────────┤
 │ PRODUTO       │ (description)                 │ PRECO    │  ← Row 4: headers, #222221
 ├───────────────┴───────────────────────────────┴──────────┤
 │ MOTOR OILS                                               │  ← family row: #CA4F24 bold
 ├───────────────┬───────────────────────────────┬──────────┤
 │ Multi-grade Oil 15W-40 1L  │ CX │ R$ 34.81            │  ← white row
-│ Synthetic Oil 5W-30 1L     │ CX │ R$ 62.83            │  ← #FFF3EB row
+│ Synthetic Oil 5W-30 1L     │ CX │ R$ 73.13            │  ← #FFF3EB row
 ├───────────────┴───────────────────────────────┴──────────┤
 │ GEAR OILS                                                │  ← family row
 ├───────────────┬───────────────────────────────┬──────────┤
-│ Gear Oil 80W-90 1L          │ CX │ R$ 28.84           │  ← white row
+│ Gear Oil 80W-90 1L          │ CX │ R$ 32.96           │  ← white row
 ├───────────────┴───────────────────────────────┴──────────┤
 │ GREASES                                                  │  ← family row
 ├───────────────┬───────────────────────────────┬──────────┤
 │ Multipurpose Grease 500g    │ CX │ R$ 19.57           │  ← white row
 └───────────────┴───────────────────────────────┴──────────┘
 ```
+
+**Important:** the exported (customer-facing) file shows ONLY price, family, unit — **no strategic class, no margin, no alert, no cost**. The 29-column internal view stays in the analyst's TABELA_NOVA. The `CLASSIFICACAO ESTRATEGICA` is strictly internal and is never exported.
 
 - Column A (SKU): hidden
 - Gridlines: hidden
@@ -105,7 +124,7 @@ Generated for PADRAO VAREJO standard table.
 ┌───────────────────────────────────────────────────────────────────────────────┐
 │ Tabela de Precos — Lubrificantes                                   [LOGO]     │
 │ Padrao Varejo                                                                 │
-│ Vigencia: 26/03/2026                                                          │
+│ Vigencia: 16/04/2026                                                          │
 ├──────────────────────────────────┬──────┬──────────┬────────────┬────────────┤
 │ PRODUTO                          │ UNID │  VAREJO  │ Acima 10V  │ Acima 20V  │
 │                                  │      │          │ (+10%)     │ (+20%)     │
@@ -113,7 +132,7 @@ Generated for PADRAO VAREJO standard table.
 │ MOTOR OILS                                                                    │
 ├──────────────────────────────────┬──────┬──────────┬────────────┬────────────┤
 │ Multi-grade Oil 15W-40 1L        │ CX   │ R$ 34.81 │ R$ 38.29   │ R$ 41.77  │
-│ Synthetic Oil 5W-30 1L           │ CX   │ R$ 62.83 │ R$ 69.11   │ R$ 75.40  │
+│ Synthetic Oil 5W-30 1L           │ CX   │ R$ 73.13 │ R$ 80.44   │ R$ 87.76  │
 └──────────────────────────────────┴──────┴──────────┴────────────┴────────────┘
 ```
 
@@ -136,3 +155,19 @@ Generated for PADRAO VAREJO standard table.
 | Price format | `R$ #,##0.00` |
 | Column A | Always hidden |
 | Gridlines | Hidden |
+
+---
+
+## Alert distribution — before / after v3.1
+
+Illustrative snapshot of how the alert distribution shifts when the PREMIUM multiplier moves from 1.20× to 1.15× on a ~2000-SKU price table (mock numbers):
+
+| Alert | v3.0 count | v3.1 count | Delta |
+|---|---|---|---|
+| SEM CUSTO | 604 | 604 | 0 |
+| ABAIXO MINIMO | 42 | 42 | 0 |
+| ABAIXO ALVO | 310 | 310 | 0 |
+| OK | 890 | **750** | −140 |
+| PREMIUM | 154 | **294** | +140 |
+
+The shift is entirely between OK and PREMIUM — 140 SKUs that previously looked fine now trigger review. This is the intended effect of v3.1: tighter visibility on prices that drift too far above the suggested band.

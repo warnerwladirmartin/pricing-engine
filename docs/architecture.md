@@ -1,4 +1,4 @@
-# Architecture — Pricing & Margin Engine v3.0
+# Architecture — Pricing & Margin Engine v3.1
 
 ## Data Flow
 
@@ -41,7 +41,7 @@ EP_MOTOR_PRECIFICACAO
   ├── CONFIG             IDs, DATA_CORTE_HISTORICO, DATA_VIGENCIA, LOGO_URL
   ├── REAJUSTES          global + classification + family adjustment %s
   ├── CLASSIFICACAO      SKU → commercial classification lookup
-  ├── TABELA_NOVA        28-column working table (see below)
+  ├── TABELA_NOVA        29-column working table (v3.1; see below)
   └── Export
         │
         │  exportarTabelaAtual() / exportarTodasTabelas()
@@ -58,17 +58,19 @@ Google Drive folder
 
 ## TABELA_NOVA — Column Map
 
-28 columns, 1-indexed. The `COL` object in `main.gs` maps names to indices.
+29 columns, 1-indexed (v3.1). The `COL` object in `main.gs` maps names to indices.
+
+**v3.1 change:** column E (`CLASSIF_ESTRATEGICA`) was inserted between classification and unit. All subsequent columns shifted by +1.
 
 | Range | Purpose |
 |---|---|
-| A–E (1–5) | Product identity: SKU, name, family, classification, unit |
-| F–K (6–11) | Cost breakdown: production + freight + commission + taxes + financial + total |
-| L–O (12–15) | Margin policy: min%, target%, floor price, suggested price |
-| P–R (16–18) | Reference data: benchmark price, last invoiced price, history flag |
-| S–U (19–21) | Pricing decision: base price, adjustment %, new price |
-| V–X (22–24) | Margin check: real margin %, real margin R$, alert |
-| Y–AB (25–28) | Sales intelligence: last sale date, volume, invoice count, source flag |
+| A–F (1–6) | Product identity: SKU, name, family, classification, **strategic class (v3.1)**, unit |
+| G–L (7–12) | Cost breakdown: production + freight + commission + taxes + financial + total |
+| M–P (13–16) | Margin policy: min%, target%, floor price, suggested price |
+| Q–S (17–19) | Reference data: benchmark price, last invoiced price, history flag |
+| T–V (20–22) | Pricing decision: base price, adjustment %, new price |
+| W–Y (23–25) | Margin check: real margin %, real margin R$, alert |
+| Z–AC (26–29) | Sales intelligence: last sale date, volume, invoice count, source flag |
 
 ---
 
@@ -106,7 +108,7 @@ Google Drive folder
 
 | Function | Description |
 |---|---|
-| `carregarCliente()` | Main orchestrator: reads all sources, fills all 28 columns for the selected customer |
+| `carregarCliente()` | Main orchestrator: reads all sources, fills all 29 columns for the selected customer |
 | `carregarTabelaPadrao_(nome)` | Loads a standard table (PADRAO GERAL / RJ / CONSUMO / VAREJO) from EP_TABELAS_REF |
 | `corrigirFormulas()` | "Recalcular Margens": recomputes cost/margin/alert columns without reloading history or prices |
 
@@ -129,7 +131,7 @@ Google Drive folder
 | CONFIG | Sheet IDs (B3–B8), dates, customer selector (B2) | Analyst |
 | REAJUSTES | Adjustment %s: global, by classification, by family | Analyst |
 | CLASSIFICACAO | SKU → commercial classification mapping | Analyst |
-| TABELA_NOVA | 28-column working table | Script (auto) |
+| TABELA_NOVA | 29-column working table (v3.1) | Script (auto) |
 | INSTRUCOES | User documentation (new in v3.0) | Analyst |
 | MODELO_REAJUSTES | Template for filling REAJUSTES tab (new in v3.0) | Reference |
 
